@@ -58,7 +58,7 @@ if __name__ == '__main__':
     parser.add_argument('--iters', type=int, default=10000, help="training iters")
     parser.add_argument('--lr', type=float, default=1e-3, help="max learning rate")
     parser.add_argument('--ckpt', type=str, default='latest', help="possible options are ['latest', 'scratch', 'best', 'latest_model']")
-    parser.add_argument('--cuda_ray', action='store_true', help="use CUDA raymarching instead of pytorch")
+    parser.add_argument('--cuda_ray', action='store_true', help="use CUDA raymarching instead of pytorch")  # Turn on CUDA raymarching
     parser.add_argument('--taichi_ray', action='store_true', help="use taichi raymarching")
     parser.add_argument('--max_steps', type=int, default=1024, help="max num steps sampled per ray (only valid when using --cuda_ray)")
     parser.add_argument('--num_steps', type=int, default=64, help="num steps sampled per ray (only valid when not using --cuda_ray)")
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('--albedo_iter_ratio', type=float, default=0, help="training iters that only use albedo shading")
     parser.add_argument('--min_ambient_ratio', type=float, default=0.1, help="minimum ambient ratio to use in lambertian shading")
     parser.add_argument('--textureless_ratio', type=float, default=0.2, help="ratio of textureless shading")
-    parser.add_argument('--jitter_pose', action='store_true', help="add jitters to the randomly sampled camera poses")
+    parser.add_argument('--jitter_pose', action='store_true', help="add jitters to the randomly sampled camera poses")      # (Ben): 添加随机抖动
     parser.add_argument('--jitter_center', type=float, default=0.2, help="amount of jitter to add to sampled camera pose's center (camera location)")
     parser.add_argument('--jitter_target', type=float, default=0.2, help="amount of jitter to add to sampled camera pose's target (i.e. 'look-at')")
     parser.add_argument('--jitter_up', type=float, default=0.02, help="amount of jitter to add to sampled camera pose's up-axis (i.e. 'camera roll')")
@@ -169,14 +169,14 @@ if __name__ == '__main__':
 
     opt = parser.parse_args()
 
-    if opt.O:
-        opt.fp16 = True
-        opt.cuda_ray = True
+    if opt.O:   # Instant-NGP backbone
+        opt.fp16 = True     # Use float16 for training
+        opt.cuda_ray = True     # Turn on CUDA raymarching
 
-    elif opt.O2:
+    elif opt.O2:    # Vanilla NeRF backbone
         opt.fp16 = True
         opt.backbone = 'vanilla'
-        opt.progressive_level = True
+        opt.progressive_level = True    # progressively increase gridencoder's max_level
 
     if opt.IF:
         if 'SD' in opt.guidance:
@@ -361,6 +361,7 @@ if __name__ == '__main__':
     else:
 
         train_loader = NeRFDataset(opt, device=device, type='train', H=opt.h, W=opt.w, size=opt.dataset_size_train * opt.batch_size).dataloader()
+        train_loader_wu = NeRFDataset(opt, device=device, type='none', H=opt.h, W=opt.w, size=opt.dataset_size_train * opt.batch_size).dataloader()
 
         if opt.optim == 'adan':
             from optimizer import Adan
@@ -407,7 +408,8 @@ if __name__ == '__main__':
             test_loader = NeRFDataset(opt, device=device, type='test', H=opt.H, W=opt.W, size=opt.dataset_size_test).dataloader(batch_size=1)
 
             max_epoch = np.ceil(opt.iters / len(train_loader)).astype(np.int32)
-            trainer.train(train_loader, valid_loader, test_loader, max_epoch)
+            trainer.train(train_loader_wu, valid_loader, test_loader, max_epoch)
+            # trainer.train(train_loader, valid_loader, test_loader, max_epoch)
 
             if opt.save_mesh:
                 trainer.save_mesh()

@@ -1013,7 +1013,7 @@ class Trainer(object):
             for metric in self.metrics:
                 metric.clear()
 
-        self.model.train()
+        self.model.train()          # (Ben): set model to training mode
 
         # distributedSampler: must call set_epoch() to shuffle indices across multiple epochs
         # ref: https://pytorch.org/docs/stable/data.html

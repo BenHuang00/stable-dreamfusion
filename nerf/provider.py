@@ -82,12 +82,12 @@ def rand_poses(size, device, opt, radius_range=[1, 1.5], theta_range=[0, 120], p
         poses: [size, 4, 4]
     '''
 
-    theta_range = np.array(theta_range) / 180 * np.pi
-    phi_range = np.array(phi_range) / 180 * np.pi
+    theta_range = np.array(theta_range) / 180 * np.pi       # (Ben): 点在 z 轴上的投影与 z 轴的夹角
+    phi_range = np.array(phi_range) / 180 * np.pi           # (Ben): 点在 x-y 平面上的投影与 x 轴的夹角
     angle_overhead = angle_overhead / 180 * np.pi
     angle_front = angle_front / 180 * np.pi
 
-    radius = torch.rand(size, device=device) * (radius_range[1] - radius_range[0]) + radius_range[0]
+    radius = torch.rand(size, device=device) * (radius_range[1] - radius_range[0]) + radius_range[0]            # (Ben): 生成随机的半径
 
     if random.random() < uniform_sphere_rate:
         unit_centers = F.normalize(
