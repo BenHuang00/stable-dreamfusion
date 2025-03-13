@@ -74,8 +74,8 @@ class StableDiffusion(nn.Module):
         print(f'[INFO] loaded stable diffusion!')
 
         if use_depth:
-            self.depth_model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf")
-            self.depth_img_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf")
+            self.depth_model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf", torch_dtype=self.precision_t)
+            self.depth_img_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf", torch_dtype=self.precision_t)
             self.depth_model.to(device)
             
             print(f'[INFO] loaded depth model!')
