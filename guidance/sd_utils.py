@@ -183,7 +183,7 @@ class StableDiffusion(nn.Module):
         # depth: [B, 1, H, W]
 
         with torch.no_grad():
-            inputs = inputs.to(self.device)
+            img = img.to(self.device)
             depth = depth.to(self.device)
 
             inputs = self.depth_img_processor(images=img, return_tensors="pt")
