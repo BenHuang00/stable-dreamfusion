@@ -172,7 +172,7 @@ class StableDiffusion(nn.Module):
 
         if self.depth_model is not None and self.depth_img_processor is not None:
             depth_loss = self.get_depth_loss(result_hopefully_less_noisy_image, depth)
-            loss += depth_loss
+            loss += 0.5 * depth_loss
 
         return loss
     
@@ -194,8 +194,12 @@ class StableDiffusion(nn.Module):
                 outputs,
                 target_sizes=[(512, 512)],
             )
-        
+
         depth_output = [x['predicted_depth'] for x in post_processed_output]
+        depth_output = torch.stack(depth_output, dim=0)
+
+        depth_output = depth_output / depth_output.max()
+        depth = depth / depth.max()
 
         depth_loss = F.mse_loss(depth_output, depth)
 
