@@ -77,7 +77,6 @@ class StableDiffusion(nn.Module):
             self.depth_model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf", torch_dtype=self.precision_t)
             self.depth_img_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf", torch_dtype=self.precision_t)
             self.depth_model.to(device)
-            self.depth_img_processor.to(device)
             
             print(f'[INFO] loaded depth model!')
         else:
@@ -183,10 +182,10 @@ class StableDiffusion(nn.Module):
         # depth: [B, 1, H, W]
 
         with torch.no_grad():
-            img = img.to(self.device)
-            depth = depth.to(self.device)
-
             inputs = self.depth_img_processor(images=img, return_tensors="pt")
+
+            inputs = inputs.to(self.device)
+            depth = depth.to(self.device)
 
             with torch.no_grad():
                 outputs = self.depth_model(**inputs)
