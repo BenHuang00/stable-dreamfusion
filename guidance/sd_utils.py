@@ -1,4 +1,4 @@
-from transformers import CLIPTextModel, CLIPTokenizer, logging
+from transformers import CLIPTextModel, CLIPTokenizer, logging, AutoImageProcessor, AutoModelForDepthEstimation
 from diffusers import AutoencoderKL, UNet2DConditionModel, PNDMScheduler, DDIMScheduler, StableDiffusionPipeline
 from diffusers.utils.import_utils import is_xformers_available
 from os.path import isfile
@@ -23,7 +23,7 @@ def seed_everything(seed):
     #torch.backends.cudnn.benchmark = True
 
 class StableDiffusion(nn.Module):
-    def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98]):
+    def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98], use_depth=False):
         super().__init__()
 
         self.device = device
@@ -73,6 +73,16 @@ class StableDiffusion(nn.Module):
 
         print(f'[INFO] loaded stable diffusion!')
 
+        if use_depth:
+            self.depth_model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf")
+            self.depth_img_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf")
+            self.depth_model.to(device)
+            
+            print(f'[INFO] loaded depth model!')
+        else:
+            self.depth_model = None
+            self.depth_img_processor = None
+
     @torch.no_grad()
     def get_text_embeds(self, prompt):
         # prompt: [str]
@@ -84,7 +94,7 @@ class StableDiffusion(nn.Module):
 
 
     def train_step(self, text_embeddings, pred_rgb, guidance_scale=100, as_latent=False, grad_scale=1,
-                   save_guidance_path:Path=None):
+                   save_guidance_path:Path=None, depth=None):
 
         if as_latent:
             latents = F.interpolate(pred_rgb, (64, 64), mode='bilinear', align_corners=False) * 2 - 1
@@ -160,8 +170,32 @@ class StableDiffusion(nn.Module):
         targets = (latents - grad).detach()
         loss = 0.5 * F.mse_loss(latents.float(), targets, reduction='sum') / latents.shape[0]
 
+        if self.depth_model is not None and self.depth_img_processor is not None:
+            depth_loss = self.get_depth_loss(result_hopefully_less_noisy_image, depth)
+            loss += depth_loss
+
         return loss
     
+
+    def get_depth_loss(self, img, depth):
+        # img: [B, 3, H, W]
+        # depth: [B, 1, H, W]
+
+        inputs = self.depth_img_processor(images=img, return_tensors="pt")
+        
+        with torch.no_grad():
+            outputs = self.depth_model(**inputs)
+
+        post_processed_output = self.image_processor.post_process_depth_estimation(
+            outputs,
+            target_sizes=[(512, 512)],
+        )
+        
+        depth_output = [x['predicted_depth'] for x in post_processed_output]
+
+        depth_loss = F.mse_loss(depth_output, depth)
+
+        return depth_loss
 
     def train_step_perpneg(self, text_embeddings, weights, pred_rgb, guidance_scale=100, as_latent=False, grad_scale=1,
                    save_guidance_path:Path=None):

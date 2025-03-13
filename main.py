@@ -48,6 +48,8 @@ if __name__ == '__main__':
     parser.add_argument('--init_with', type=str, default='', help="ckpt to init dmtet")
     parser.add_argument('--lock_geo', action='store_true', help="disable dmtet to learn geometry")
 
+    parser.add_argument('--use_depth', action='store_true', help="use depth map as guidance")
+
     ## Perp-Neg options
     parser.add_argument('--perpneg', action='store_true', help="use perp_neg")
     parser.add_argument('--negative_w', type=float, default=-2, help="The scale of the weights of negative prompts. A larger value will help to avoid the Janus problem, but may cause flat faces. Vary between 0 to -4, depending on the prompt")
@@ -379,7 +381,7 @@ if __name__ == '__main__':
 
         if 'SD' in opt.guidance:
             from guidance.sd_utils import StableDiffusion
-            guidance['SD'] = StableDiffusion(device, opt.fp16, opt.vram_O, opt.sd_version, opt.hf_key, opt.t_range)
+            guidance['SD'] = StableDiffusion(device, opt.fp16, opt.vram_O, opt.sd_version, opt.hf_key, opt.t_range, opt.use_depth)
 
         if 'IF' in opt.guidance:
             from guidance.if_utils import IF
