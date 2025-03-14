@@ -198,6 +198,8 @@ class StableDiffusion(nn.Module):
         depth_output = [x['predicted_depth'] for x in post_processed_output]
         depth_output = torch.stack(depth_output, dim=0)
 
+        depth = F.interpolate(depth, (512, 512), mode='bilinear', align_corners=False)
+
         depth_output = depth_output / depth_output.max()
         depth = depth / depth.max()
 
