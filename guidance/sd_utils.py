@@ -23,7 +23,7 @@ def seed_everything(seed):
     #torch.backends.cudnn.benchmark = True
 
 class StableDiffusion(nn.Module):
-    def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98], use_depth=False):
+    def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98], depth_loss_ratio=0.0):
         super().__init__()
 
         self.device = device
@@ -73,7 +73,8 @@ class StableDiffusion(nn.Module):
 
         print(f'[INFO] loaded stable diffusion!')
 
-        if use_depth:
+        if depth_loss_ratio > 0:
+            self.depth_loss_ratio = depth_loss_ratio
             self.depth_model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf", torch_dtype=self.precision_t)
             self.depth_img_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf", torch_dtype=self.precision_t)
             self.depth_model.to(device)
@@ -172,7 +173,7 @@ class StableDiffusion(nn.Module):
 
         if self.depth_model is not None and self.depth_img_processor is not None:
             depth_loss = self.get_depth_loss(result_hopefully_less_noisy_image, depth)
-            loss += 0.5 * depth_loss
+            loss += self.depth_loss_ratio * depth_loss
 
         return loss
     
