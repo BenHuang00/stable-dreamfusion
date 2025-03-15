@@ -48,6 +48,8 @@ if __name__ == '__main__':
     parser.add_argument('--init_with', type=str, default='', help="ckpt to init dmtet")
     parser.add_argument('--lock_geo', action='store_true', help="disable dmtet to learn geometry")
 
+    parser.add_argument('--depthfm_ratio', type=float, default=0.5, help="ratio of depthfm loss")
+
     ## Perp-Neg options
     parser.add_argument('--perpneg', action='store_true', help="use perp_neg")
     parser.add_argument('--negative_w', type=float, default=-2, help="The scale of the weights of negative prompts. A larger value will help to avoid the Janus problem, but may cause flat faces. Vary between 0 to -4, depending on the prompt")
