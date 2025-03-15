@@ -188,8 +188,7 @@ class StableDiffusion(nn.Module):
             inputs = inputs.to(self.device)
             depth = depth.to(self.device)
 
-            with torch.no_grad():
-                outputs = self.depth_model(**inputs)
+            outputs = self.depth_model(**inputs)
 
             post_processed_output = self.depth_img_processor.post_process_depth_estimation(
                 outputs,
