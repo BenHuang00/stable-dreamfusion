@@ -203,7 +203,7 @@ class StableDiffusion(nn.Module):
         depth_output = depth_output / depth_output.max()
         depth = depth / depth.max()
 
-        depth_loss = F.mse_loss(depth_output, depth, reduction='sum') / depth_output.shape[0]
+        depth_loss = (F.mse_loss(depth_output, depth, reduction='sum') / depth_output.shape[0]) / 64
 
         return depth_loss
 
