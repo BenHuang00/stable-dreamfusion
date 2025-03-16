@@ -183,9 +183,9 @@ class StableDiffusion(nn.Module):
         context = pred_x0
         x_source = latents_noisy
 
-        conditioning = torch.tensor(self.depthfm_model.empty_text_embed).to(self.device).repeat(pred_x0.shape[0], 1, 1)
-
         with torch.no_grad():
+            conditioning = torch.tensor(self.depthfm_model.empty_text_embed).to(self.device).repeat(pred_x0.shape[0], 1, 1)
+
             depth_pred = self.depthfm_model.generate(x_source, num_steps=num_steps, context=context, context_ca=conditioning)
 
         depth_pred = (depth_pred - depth_pred.min()) / (depth_pred.max() - depth_pred.min())
