@@ -14,7 +14,7 @@ from torchvision.utils import save_image
 
 from torch.cuda.amp import custom_bwd, custom_fwd
 from .perpneg_utils import weighted_perpendicular_aggregator
-
+from depthfm import DepthFM
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -23,7 +23,7 @@ def seed_everything(seed):
     #torch.backends.cudnn.benchmark = True
 
 class StableDiffusion(nn.Module):
-    def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98]):
+    def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98], depthfm_ratio=0):
         super().__init__()
 
         self.device = device
@@ -73,6 +73,18 @@ class StableDiffusion(nn.Module):
 
         print(f'[INFO] loaded stable diffusion!')
 
+        if depthfm_ratio > 0:
+            self.depthfm_ratio = depthfm_ratio
+            self.depthfm_model = DepthFM('pretrained/depthfm/depthfm-v1.ckpt')
+        else:
+            self.depthfm_model = None
+        
+        if vram_O:          # TODO(Ben)
+            pass
+        else:
+            self.depthfm_model.to(device)
+
+
     @torch.no_grad()
     def get_text_embeds(self, prompt):
         # prompt: [str]
@@ -84,7 +96,7 @@ class StableDiffusion(nn.Module):
 
 
     def train_step(self, text_embeddings, pred_rgb, guidance_scale=100, as_latent=False, grad_scale=1,
-                   save_guidance_path:Path=None):
+                   save_guidance_path:Path=None, depth=None):
 
         if as_latent:
             latents = F.interpolate(pred_rgb, (64, 64), mode='bilinear', align_corners=False) * 2 - 1
@@ -160,8 +172,29 @@ class StableDiffusion(nn.Module):
         targets = (latents - grad).detach()
         loss = 0.5 * F.mse_loss(latents.float(), targets, reduction='sum') / latents.shape[0]
 
+        if self.depthfm_model is not None:
+            depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy)
+            loss += self.depthfm_ratio * depth_loss
+
         return loss
     
+
+    def get_depthfm_loss(self, pred_x0, depth, latents_noisy, num_steps: int = 4):
+        context = pred_x0
+        x_source = latents_noisy
+
+        conditioning = torch.tensor(self.depthfm_model.empty_text_embed).to(self.device).repeat(pred_x0.shape[0], 1, 1)
+
+        with torch.no_grad():
+            depth_pred = self.depthfm_model.generate(x_source, num_steps=num_steps, context=context, context_ca=conditioning)
+
+        depth_pred = (depth_pred - depth_pred.min()) / (depth_pred.max() - depth_pred.min())
+        depth = (depth - depth.min()) / (depth.max() - depth.min())
+
+        loss = F.mse_loss(depth_pred, depth, reduction='sum') / depth_pred.shape[0]
+
+        return loss
+
 
     def train_step_perpneg(self, text_embeddings, weights, pred_rgb, guidance_scale=100, as_latent=False, grad_scale=1,
                    save_guidance_path:Path=None):

@@ -48,7 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--init_with', type=str, default='', help="ckpt to init dmtet")
     parser.add_argument('--lock_geo', action='store_true', help="disable dmtet to learn geometry")
 
-    parser.add_argument('--depthfm_ratio', type=float, default=0.5, help="ratio of depthfm loss")
+    parser.add_argument('--depthfm_ratio', type=float, default=0, help="ratio of depthfm loss")
 
     ## Perp-Neg options
     parser.add_argument('--perpneg', action='store_true', help="use perp_neg")
@@ -381,7 +381,7 @@ if __name__ == '__main__':
 
         if 'SD' in opt.guidance:
             from guidance.sd_utils import StableDiffusion
-            guidance['SD'] = StableDiffusion(device, opt.fp16, opt.vram_O, opt.sd_version, opt.hf_key, opt.t_range)
+            guidance['SD'] = StableDiffusion(device, opt.fp16, opt.vram_O, opt.sd_version, opt.hf_key, opt.t_range, opt.depthfm_ratio)
 
         if 'IF' in opt.guidance:
             from guidance.if_utils import IF
