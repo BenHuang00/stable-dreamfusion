@@ -10,7 +10,7 @@ opencv-python
 imageio
 imageio-ffmpeg
 
-torch
+torch==2.6.0
 torch-ema
 einops
 tensorboard
@@ -55,4 +55,4 @@ debugpy-run
 # for deepfloyd if
 sentencepiece
 
-# git+https://github.com/BenHuang00/depth-fm.git@dev
+git+https://github.com/BenHuang00/depth-fm.git@dev
