@@ -10,7 +10,7 @@ opencv-python
 imageio
 imageio-ffmpeg
 
-torch
+torch==2.6.0
 torch-ema
 einops
 tensorboard
