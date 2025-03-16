@@ -54,3 +54,5 @@ debugpy-run
 
 # for deepfloyd if
 sentencepiece
+
+git+https://github.com/BenHuang00/depth-fm.git@dev
