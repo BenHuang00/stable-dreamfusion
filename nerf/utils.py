@@ -626,7 +626,7 @@ class Trainer(object):
                 text_z = torch.cat(text_z, dim=0)
                 if self.opt.perpneg:
                     loss = loss + self.guidance['SD'].train_step_perpneg(text_z, weights, pred_rgb, as_latent=as_latent, guidance_scale=self.opt.guidance_scale, grad_scale=self.opt.lambda_guidance,
-                                                    save_guidance_path=save_guidance_path)
+                                                    save_guidance_path=save_guidance_path, depth=pred_depth)
                 else:
                     loss = loss + self.guidance['SD'].train_step(text_z, pred_rgb, as_latent=as_latent, guidance_scale=self.opt.guidance_scale, grad_scale=self.opt.lambda_guidance,
                                                                 save_guidance_path=save_guidance_path, depth=pred_depth)

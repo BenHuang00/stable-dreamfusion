@@ -197,7 +197,7 @@ class StableDiffusion(nn.Module):
 
 
     def train_step_perpneg(self, text_embeddings, weights, pred_rgb, guidance_scale=100, as_latent=False, grad_scale=1,
-                   save_guidance_path:Path=None):
+                   save_guidance_path:Path=None, depth=None):
 
         B = pred_rgb.shape[0]
         K = (text_embeddings.shape[0] // B) - 1 # maximum number of prompts       
@@ -276,6 +276,10 @@ class StableDiffusion(nn.Module):
 
         targets = (latents - grad).detach()
         loss = 0.5 * F.mse_loss(latents.float(), targets, reduction='sum') / latents.shape[0]
+
+        if self.depthfm_model is not None:
+            depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy)
+            loss += self.depthfm_ratio * depth_loss
 
         return loss
 
