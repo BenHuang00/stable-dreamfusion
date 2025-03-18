@@ -1111,6 +1111,7 @@ class Trainer(object):
         cpu_mem, gpu_mem = get_CPU_mem(), get_GPU_mem()[0]
         self.log(f"==> [{time.strftime('%Y-%m-%d_%H-%M-%S')}] Finished Epoch {self.epoch}/{max_epochs}. CPU={cpu_mem:.1f}GB, GPU={gpu_mem:.1f}GB.")
 
+        torch.cuda.empty_cache()
 
     def evaluate_one_epoch(self, loader, name=None):
         self.log(f"++> Evaluate {self.workspace} at epoch {self.epoch} ...")
