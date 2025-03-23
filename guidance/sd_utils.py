@@ -78,13 +78,13 @@ class StableDiffusion(nn.Module):
         if depthfm_ratio > 0:
             self.depthfm_ratio = depthfm_ratio
             self.depthfm_model = DepthFM('pretrained/depthfm/depthfm-v1.ckpt')
+
+            if vram_O:          # TODO(Ben)
+                pass
+            else:
+                self.depthfm_model.to(device)
         else:
             self.depthfm_model = None
-        
-        if vram_O:          # TODO(Ben)
-            pass
-        else:
-            self.depthfm_model.to(device)
 
 
     @torch.no_grad()
