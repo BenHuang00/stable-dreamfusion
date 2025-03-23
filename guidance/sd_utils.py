@@ -1,8 +1,14 @@
+import time
+
 from transformers import CLIPTextModel, CLIPTokenizer, logging
 from diffusers import AutoencoderKL, UNet2DConditionModel, PNDMScheduler, DDIMScheduler, StableDiffusionPipeline
 from diffusers.utils.import_utils import is_xformers_available
 from os.path import isfile
 from pathlib import Path
+
+import numpy as np
+
+from PIL import Image
 
 # suppress partial model loading warning
 logging.set_verbosity_error()
@@ -23,6 +29,40 @@ def seed_everything(seed):
     torch.cuda.manual_seed(seed)
     #torch.backends.cudnn.deterministic = True
     #torch.backends.cudnn.benchmark = True
+
+
+def cosine_log_snr(t, eps=0.00001):
+    """
+    Returns log Signal-to-Noise ratio for time step t and image size 64
+    eps: avoid division by zero
+    """
+    return -2 * np.log(np.tan((np.pi * t) / 2) + eps)
+
+
+def sigmoid(x):
+  return 1 / (1 + np.exp(-x))
+
+
+def cosine_alpha_bar(t):
+    return sigmoid(cosine_log_snr(t))
+
+
+def q_sample(x_start: torch.Tensor, t: int, noise: torch.Tensor = None, n_diffusion_timesteps: int = 1000):
+    """
+    Diffuse the data for a given number of diffusion steps. In other
+    words sample from q(x_t | x_0).
+    """
+    dev = x_start.device
+    dtype = x_start.dtype
+
+    if noise is None:
+        noise = torch.randn_like(x_start)
+    
+    alpha_bar_t = cosine_alpha_bar(t / n_diffusion_timesteps)
+    alpha_bar_t = torch.tensor(alpha_bar_t).to(dev).to(dtype)
+
+    return torch.sqrt(alpha_bar_t) * x_start + torch.sqrt(1 - alpha_bar_t) * noise
+
 
 class StableDiffusion(nn.Module):
     def __init__(self, device, fp16, vram_O, sd_version='2.1', hf_key=None, t_range=[0.02, 0.98], depthfm_ratio=0):
@@ -195,11 +235,24 @@ class StableDiffusion(nn.Module):
         with torch.no_grad():
             conditioning = torch.tensor(self.depthfm_model.empty_text_embed).to(self.device).repeat(pred_x0.shape[0], 1, 1)
 
+            if self.depthfm_model.noise_step > 0:
+                x_source = q_sample(x_source, self.depthfm_model.noise_step)
+
             depth_pred = self.depthfm_model.generate(x_source, num_steps=num_steps, context=context, context_ca=conditioning)
             depth_pred = depth_pred.mean(dim=1, keepdim=True)
 
         depth_pred = (depth_pred - depth_pred.min()) / (depth_pred.max() - depth_pred.min())
         depth = (depth - depth.min()) / (depth.max() - depth.min())
+
+        # 保存depth_pred和depth为图片
+        depth_pred = depth_pred.squeeze().cpu().numpy()
+        depth = depth.squeeze().cpu().numpy()
+        depth_pred = (depth_pred * 255).astype(np.uint8)
+        depth = (depth * 255).astype(np.uint8)
+        depth_pred = Image.fromarray(depth_pred)
+        depth_pred.save(f'depth_pred_{time.time()}.png')
+        depth = Image.fromarray(depth)
+        depth.save(f'depth_{time.time()}.png')
 
         loss = F.mse_loss(depth_pred, depth, reduction='sum') / depth_pred.shape[0]
 
