@@ -3,6 +3,8 @@ import argparse
 import pandas as pd
 import sys
 
+import wandb
+
 from nerf.provider import NeRFDataset
 from nerf.utils import *
 
@@ -28,6 +30,11 @@ if __name__ == '__main__':
     parser.add_argument('--test_interval', type=int, default=100, help="test on the test set every interval epochs")
     parser.add_argument('--workspace', type=str, default='workspace')
     parser.add_argument('--seed', default=None)
+
+    parser.add_argument('--wandb', action='store_true', help="use wandb for logging")
+    parser.add_argument('--wandb_project', type=str, default='NeRF')
+    parser.add_argument('--wandb_entity', type=str, default=None)
+    parser.add_argument('--wandb_key', type=str, default=None)
 
     parser.add_argument('--image', default=None, help="image prompt")
     parser.add_argument('--image_config', default=None, help="image config csv")
@@ -309,6 +316,17 @@ if __name__ == '__main__':
 
     print(opt)
 
+    if opt.wandb:
+        wandb.login(key=opt.wandb_key)
+        wandb.init(
+            project=opt.wandb_project,
+            entity=opt.wandb_entity,
+            name=opt.workspace,
+            config=opt,
+            settings=wandb.Settings(start_method="fork")
+        )
+        wandb.run.save()
+
     if opt.seed is not None:
         seed_everything(int(opt.seed))
 
@@ -331,6 +349,8 @@ if __name__ == '__main__':
             model.init_tet(mesh=mesh)
 
     print(model)
+    if opt.wandb:
+        wandb.watch(model, log='all', log_graph=True)
 
     if opt.six_views:
         guidance = None # no need to load guidance model at test

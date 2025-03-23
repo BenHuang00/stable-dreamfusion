@@ -12,6 +12,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.utils import save_image
 
+import wandb
+
 from torch.cuda.amp import custom_bwd, custom_fwd
 from .perpneg_utils import weighted_perpendicular_aggregator
 from depthfm import DepthFM
@@ -171,11 +173,18 @@ class StableDiffusion(nn.Module):
 
         targets = (latents - grad).detach()
         loss = 0.5 * F.mse_loss(latents.float(), targets, reduction='sum') / latents.shape[0]
+        if wandb.run is not None:
+            wandb.log({"train_normal_loss": loss.item()})
 
         if self.depthfm_model is not None:
             depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy)
             loss += self.depthfm_ratio * depth_loss
-
+            if wandb.run is not None:
+                wandb.log({"train_depthfm_loss": depth_loss.item()})
+            
+        if wandb.run is not None:
+            wandb.log({"train_loss": loss.item()})
+        
         return loss
     
 
@@ -278,9 +287,17 @@ class StableDiffusion(nn.Module):
         targets = (latents - grad).detach()
         loss = 0.5 * F.mse_loss(latents.float(), targets, reduction='sum') / latents.shape[0]
 
+        if wandb.run is not None:
+            wandb.log({"train_normal_loss": loss.item()})
+
         if self.depthfm_model is not None:
             depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy)
             loss += self.depthfm_ratio * depth_loss
+            if wandb.run is not None:
+                wandb.log({"train_depthfm_loss": depth_loss.item()})
+
+        if wandb.run is not None:
+            wandb.log({"train_loss": loss.item()})
 
         return loss
 

@@ -56,3 +56,5 @@ debugpy-run
 sentencepiece
 
 git+https://github.com/BenHuang00/depth-fm.git@dev
+
+wandb
