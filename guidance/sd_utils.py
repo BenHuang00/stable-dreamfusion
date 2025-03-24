@@ -244,15 +244,15 @@ class StableDiffusion(nn.Module):
         depth_pred = (depth_pred - depth_pred.min()) / (depth_pred.max() - depth_pred.min())
         depth = (depth - depth.min()) / (depth.max() - depth.min())
 
-        # 保存depth_pred和depth为图片
-        depth_pred = depth_pred.squeeze().cpu().numpy()
-        depth = depth.squeeze().cpu().numpy()
-        depth_pred = (depth_pred * 255).astype(np.uint8)
-        depth = (depth * 255).astype(np.uint8)
-        depth_pred = Image.fromarray(depth_pred)
-        depth_pred.save(f'depth_pred_{time.time()}.png')
-        depth = Image.fromarray(depth)
-        depth.save(f'depth_{time.time()}.png')
+        with torch.no_grad():
+            depth_pred = depth_pred.squeeze().cpu().numpy()
+            depth = depth.squeeze().cpu().numpy()
+            depth_pred = (depth_pred * 255).astype(np.uint8)
+            depth = (depth * 255).astype(np.uint8)
+            depth_pred = Image.fromarray(depth_pred)
+            depth_pred.save(f'depth_pred_{time.time()}.png')
+            depth = Image.fromarray(depth)
+            depth.save(f'depth_{time.time()}.png')
 
         loss = F.mse_loss(depth_pred, depth, reduction='sum') / depth_pred.shape[0]
 
