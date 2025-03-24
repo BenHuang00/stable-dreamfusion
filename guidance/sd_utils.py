@@ -236,7 +236,7 @@ class StableDiffusion(nn.Module):
             conditioning = torch.tensor(self.depthfm_model.empty_text_embed).to(self.device).repeat(pred_x0.shape[0], 1, 1)
 
             if self.depthfm_model.noise_step > 0:
-                x_source = q_sample(x_source, self.depthfm_model.noise_step)
+                x_source = q_sample(x_source, self.depthfm_model.noising_step)
 
             depth_pred = self.depthfm_model.generate(x_source, num_steps=num_steps, context=context, context_ca=conditioning)
             depth_pred = depth_pred.mean(dim=1, keepdim=True)
