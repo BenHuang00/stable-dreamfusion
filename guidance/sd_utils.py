@@ -217,7 +217,7 @@ class StableDiffusion(nn.Module):
             wandb.log({"train_normal_loss": loss.item()})
 
         if self.depthfm_model is not None:
-            depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy)
+            depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy, save_guidance_path=save_guidance_path)
             loss += self.depthfm_ratio * depth_loss
             if wandb.run is not None:
                 wandb.log({"train_depthfm_loss": depth_loss.item()})
@@ -228,7 +228,7 @@ class StableDiffusion(nn.Module):
         return loss
     
 
-    def get_depthfm_loss(self, pred_x0, depth, latents_noisy, num_steps: int = 4):
+    def get_depthfm_loss(self, pred_x0, depth, latents_noisy, num_steps: int = 4, save_guidance_path=None):
         context = pred_x0
         x_source = latents_noisy
 
@@ -246,15 +246,10 @@ class StableDiffusion(nn.Module):
 
         loss = F.mse_loss(depth_pred, depth, reduction='sum') / depth_pred.shape[0]
 
-        with torch.no_grad():
-            depth_pred = depth_pred.squeeze().cpu().numpy()
-            depth = depth.squeeze().cpu().numpy()
-            depth_pred = (depth_pred * 255).astype(np.uint8)
-            depth = (depth * 255).astype(np.uint8)
-            depth_pred = Image.fromarray(depth_pred)
-            depth_pred.save(f'depth_pred_{time.time()}.png')
-            depth = Image.fromarray(depth)
-            depth.save(f'depth_{time.time()}.png')
+        if save_guidance_path:
+            with torch.no_grad():
+                save_image(depth_pred, os.path.join(save_guidance_path, f'depthfm_pred_{time.time()}.png'))
+                save_image(depth, os.path.join(save_guidance_path, f'depthfm_gt_{time.time()}.png'))
 
         return loss
 
