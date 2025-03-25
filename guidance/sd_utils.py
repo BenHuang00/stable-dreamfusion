@@ -248,8 +248,8 @@ class StableDiffusion(nn.Module):
 
         if save_guidance_path:
             with torch.no_grad():
-                save_image(depth_pred, os.path.join(save_guidance_path, f'depthfm_pred_{time.time()}.png'))
-                save_image(depth, os.path.join(save_guidance_path, f'depthfm_gt_{time.time()}.png'))
+                save_image(depth_pred, os.path.join(save_guidance_path, f'depth_pred/depthfm_pred_{time.time()}.png'))
+                save_image(depth, os.path.join(save_guidance_path, f'depth_gt/depthfm_gt_{time.time()}.png'))
 
         return loss
 
