@@ -120,6 +120,11 @@ class StableDiffusion(nn.Module):
             self.depthfm_ratio = depthfm_ratio
             self.depthfm_model = DepthFM('pretrained/depthfm/depthfm-v1.ckpt')
 
+            if not os.path.exists('depth_pred'):        # TODO(Ben): Need to delete
+                os.makedirs('depth_pred', exist_ok=True)
+            if not os.path.exists('depth_gt'):
+                os.makedirs('depth_gt', exist_ok=True)
+
             if vram_O:          # TODO(Ben)
                 pass
             else:
@@ -247,10 +252,10 @@ class StableDiffusion(nn.Module):
 
         loss = F.mse_loss(depth_pred, depth, reduction='sum') / depth_pred.shape[0]
 
-        if save_guidance_path:
+        if save_guidance_path:          # TODO(Ben): Need to delete
             with torch.no_grad():
-                save_image(depth_pred, os.path.join(save_guidance_path, f'depth_pred/depthfm_pred_{time.time()}.png'))
-                save_image(depth, os.path.join(save_guidance_path, f'depth_gt/depthfm_gt_{time.time()}.png'))
+                save_image(depth_pred, f'depth_pred/depthfm_pred_{time.time()}.png')
+                save_image(depth, f'depth_gt/depthfm_gt_{time.time()}.png')
 
         return loss
 
