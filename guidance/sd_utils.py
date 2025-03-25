@@ -1,3 +1,4 @@
+import os
 import time
 
 from transformers import CLIPTextModel, CLIPTokenizer, logging
