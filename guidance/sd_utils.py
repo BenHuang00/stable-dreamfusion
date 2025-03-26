@@ -224,7 +224,7 @@ class StableDiffusion(nn.Module):
 
         if self.depthfm_model is not None:
             depth_loss = self.get_depthfm_loss(pred_x0, depth, latents_noisy, save_guidance_path=save_guidance_path)
-            loss += self.depthfm_ratio * depth_loss
+            loss += self.depthfm_ratio * (1 - t) * depth_loss
             if wandb.run is not None:
                 wandb.log({"train_depthfm_loss": depth_loss.item()})
             
